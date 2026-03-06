@@ -1,0 +1,64 @@
+name: Grok News Report → S3
+
+on:
+  schedule:
+    - cron: '0 23 * * *'  # UTC 23:00 = JST 08:00
+  workflow_dispatch:       # 手動テスト用
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  generate-and-upload:
+    runs-on: ubuntu-latest
+    env:
+      S3_BUCKET: market-report-stack-reportbucket-3gzbhrjmoedt
+      AWS_REGION: us-east-1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install openai
+
+      - name: Generate report via Grok API
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+        run: python generate_report.py
+
+      - name: AWS認証（OIDC）
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::345862510768:role/GitHubActionsReportRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload report to S3
+        run: |
+          DATE=$(date -u +%Y-%m-%d)
+          echo "REPORT_DATE=$DATE" >> $GITHUB_ENV
+          aws s3 cp report.json \
+            "s3://${S3_BUCKET}/reports/dev/${DATE}.json" \
+            --content-type "application/json"
+          echo "Uploaded reports/dev/${DATE}.json"
+
+      - name: Download existing index
+        run: |
+          aws s3 cp "s3://${S3_BUCKET}/reports/dev/index.json" ./index.json 2>/dev/null || echo '{"reports":[]}' > index.json
+
+      - name: Update index
+        env:
+          REPORT_DATE: ${{ env.REPORT_DATE }}
+        run: python update_index.py
+
+      - name: Upload updated index to S3
+        run: |
+          aws s3 cp ./index.json \
+            "s3://${S3_BUCKET}/reports/dev/index.json" \
+            --content-type "application/json"
+          echo "Index updated"
