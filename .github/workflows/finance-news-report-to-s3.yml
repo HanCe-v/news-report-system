@@ -40,7 +40,7 @@ jobs:
 
       - name: Upload report to S3
         run: |
-          DATE=$(date -u +%Y-%m-%d)
+          DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d)
           echo "REPORT_DATE=$DATE" >> $GITHUB_ENV
           aws s3 cp finance_report.json \
             "s3://${S3_BUCKET}/reports/finance/${DATE}.json" \

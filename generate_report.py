@@ -2,7 +2,7 @@
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from openai import OpenAI
 
@@ -89,7 +89,7 @@ def validate_report(report: dict) -> None:
 
 
 def main():
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d")
 
     client = OpenAI(base_url="https://api.x.ai/v1", api_key=XAI_API_KEY)
 
