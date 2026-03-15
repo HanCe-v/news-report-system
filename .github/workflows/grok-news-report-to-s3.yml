@@ -25,18 +25,20 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install openai
-
-      - name: Generate report via Grok API
-        env:
-          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-        run: python generate_report.py
+        run: pip install requests boto3
 
       - name: AWS認証（OIDC）
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::345862510768:role/GitHubActionsReportRole
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Generate report via Grok API
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          S3_BUCKET: ${{ env.S3_BUCKET }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: python generate_report.py
 
       - name: Upload report to S3
         run: |

@@ -25,18 +25,20 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install openai
-
-      - name: Generate finance report via Grok API
-        env:
-          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-        run: python generate_finance_report.py
+        run: pip install requests boto3
 
       - name: AWS認証（OIDC）
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::345862510768:role/GitHubActionsReportRole
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Generate finance report via Grok API
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+          S3_BUCKET: ${{ env.S3_BUCKET }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: python generate_finance_report.py
 
       - name: Upload report to S3
         run: |
@@ -46,6 +48,17 @@ jobs:
             "s3://${S3_BUCKET}/reports/finance/${DATE}.json" \
             --content-type "application/json"
           echo "Uploaded reports/finance/${DATE}.json"
+
+      - name: Upload weekly calendar (Monday only)
+        run: |
+          if [ -f weekly_calendar.json ]; then
+            aws s3 cp weekly_calendar.json \
+              "s3://${S3_BUCKET}/reports/finance/weekly_calendar.json" \
+              --content-type "application/json"
+            echo "Uploaded reports/finance/weekly_calendar.json"
+          else
+            echo "No weekly_calendar.json (not Monday or no calendar data)"
+          fi
 
       - name: Download existing index
         run: |
