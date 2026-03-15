@@ -24,12 +24,15 @@ def main():
     index["reports"] = [r for r in index["reports"] if r["date"] != date]
 
     # Insert new entry
-    index["reports"].insert(0, {
+    entry = {
         "date": date,
         "topic_count": len(report.get("topics", [])),
         "overall_summary": report.get("overall_summary", ""),
         "file": f"{date}.json",
-    })
+    }
+    if report.get("theme"):
+        entry["theme"] = report["theme"]
+    index["reports"].insert(0, entry)
 
     # Sort descending by date
     index["reports"].sort(key=lambda r: r["date"], reverse=True)

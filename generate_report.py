@@ -284,6 +284,8 @@ def main():
 
     report["date"] = today
     report["generated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if theme_info:
+        report["theme"] = theme_info["theme"]
 
     validate_report(report)
 
