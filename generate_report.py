@@ -9,6 +9,7 @@ import requests
 XAI_API_KEY = os.environ["XAI_API_KEY"]
 API_URL = "https://api.x.ai/v1/responses"
 MODEL = "grok-3-fast"
+MODEL_SEARCH = "grok-4.20-beta-latest-non-reasoning"
 
 # --- 曜日別テーマ定義 (変更3 + 変更4) ---
 DAY_THEMES = {
@@ -146,6 +147,7 @@ def get_past_report_urls():
 
     try:
         import boto3
+        from botocore.exceptions import ClientError
         s3 = boto3.client("s3", region_name=aws_region)
 
         jst = timezone(timedelta(hours=9))
@@ -166,7 +168,10 @@ def get_past_report_urls():
                     previous_day_topics = json.dumps(
                         data.get("topics", []), ensure_ascii=False, indent=2
                     )
-            except s3.exceptions.NoSuchKey:
+            except ClientError as e:
+                if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+                    continue
+                print(f"Warning: failed to fetch {key}: {e}")
                 continue
             except Exception as e:
                 print(f"Warning: failed to fetch {key}: {e}")
@@ -233,7 +238,7 @@ def main():
     system_prompt = build_system_prompt(theme_info, previous_day_topics)
     user_prompt = build_user_prompt(theme_info)
 
-    print(f"Calling Grok API ({MODEL}) with web_search for {today}...")
+    print(f"Calling Grok API ({MODEL_SEARCH}) with web_search for {today}...")
     resp = requests.post(
         API_URL,
         headers={
@@ -241,17 +246,18 @@ def main():
             "Content-Type": "application/json",
         },
         json={
-            "model": MODEL,
-            "temperature": 0.2,
-            "instructions": system_prompt,
+            "model": MODEL_SEARCH,
             "input": [
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             "tools": [{"type": "web_search"}],
         },
-        timeout=120,
+        timeout=180,
     )
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        print(f"API Error {resp.status_code}: {resp.text[:500]}")
+        resp.raise_for_status()
     result = resp.json()
 
     # /v1/responses の output から text を抽出
