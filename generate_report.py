@@ -88,12 +88,12 @@ def build_system_prompt(theme_info, previous_topics_json=None):
 
     jst = timezone(timedelta(hours=9))
     today_str = datetime.now(jst).strftime("%Y年%m月%d日")
-    yesterday_str = (datetime.now(jst) - timedelta(days=1)).strftime("%Y年%m月%d日")
+    week_ago_str = (datetime.now(jst) - timedelta(days=7)).strftime("%Y年%m月%d日")
 
     return f"""\
 あなたは生成AI市場専門の技術ニュース収集AIです。
-**今日は{today_str}です。** {yesterday_str}〜{today_str}の最新ニュースのみを対象にしてください。
-古い記事（1週間以上前のもの）は絶対に含めないでください。URLの日付も確認し、最新のものだけを選んでください。
+**今日は{today_str}です。** {week_ago_str}〜{today_str}の過去7日間のニュースを対象にしてください。
+1週間以上前の古い記事は絶対に含めないでください。URLの日付も確認し、対象期間内のものだけを選んでください。
 信頼できる公式・技術メディアのみを厳選し、**以下のJSON形式のみで出力**してください。他の説明文、挨拶、Markdown、```json は一切出力しないこと。JSONが不正にならないよう厳密に守ってください。
 {theme_section}
 対象トピック（以下すべてをカバー）：
@@ -133,8 +133,8 @@ def build_system_prompt(theme_info, previous_topics_json=None):
 def build_user_prompt(theme_info):
     """曜日テーマを反映したUSER_PROMPTを構築."""
     if theme_info:
-        return f"今日のテーマは「{theme_info['theme']}」です。このテーマを中心に、過去24時間の生成AI関連ニュースTOP10を収集し、指定のJSONで出力してください。"
-    return "過去24時間の生成AI関連ニュースTOP10を収集し、指定のJSONで出力してください。"
+        return f"今日のテーマは「{theme_info['theme']}」です。このテーマを中心に、過去7日間の生成AI関連ニュースTOP10を収集し、指定のJSONで出力してください。"
+    return "過去7日間の生成AI関連ニュースTOP10を収集し、指定のJSONで出力してください。"
 
 
 def get_past_report_urls():

@@ -117,12 +117,12 @@ def build_system_prompt(theme_info, previous_topics_json=None, include_calendar=
 
     jst = timezone(timedelta(hours=9))
     today_str = datetime.now(jst).strftime("%Y年%m月%d日")
-    yesterday_str = (datetime.now(jst) - timedelta(days=1)).strftime("%Y年%m月%d日")
+    week_ago_str = (datetime.now(jst) - timedelta(days=7)).strftime("%Y年%m月%d日")
 
     return f"""\
 あなたは金融・経済市場専門のニュース収集AIです。
-**今日は{today_str}です。** {yesterday_str}〜{today_str}の最新ニュースのみを対象にしてください。
-古い記事（1週間以上前のもの）は絶対に含めないでください。URLの日付も確認し、最新のものだけを選んでください。
+**今日は{today_str}です。** {week_ago_str}〜{today_str}の過去7日間のニュースを対象にしてください。
+1週間以上前の古い記事は絶対に含めないでください。URLの日付も確認し、対象期間内のものだけを選んでください。
 信頼できる公式・金融メディアのみを厳選し、**以下のJSON形式のみで出力**してください。他の説明文、挨拶、Markdown、```json は一切出力しないこと。JSONが不正にならないよう厳密に守ってください。
 {theme_section}
 対象トピック（以下すべてをカバー）：
@@ -161,7 +161,7 @@ def build_system_prompt(theme_info, previous_topics_json=None, include_calendar=
 
 def build_user_prompt(theme_info, include_calendar=False):
     """曜日テーマを反映したUSER_PROMPTを構築."""
-    base = "過去24時間の金融・経済ニュースTOP10を収集し、指定のJSONで出力してください。"
+    base = "過去7日間の金融・経済ニュースTOP10を収集し、指定のJSONで出力してください。"
     if theme_info:
         base = f"今日のテーマは「{theme_info['theme']}」です。このテーマを中心に、{base}"
     if include_calendar:
@@ -304,7 +304,7 @@ def main():
         timeout=180,
     )
     if resp.status_code != 200:
-        print(f"API Error {resp.status_code}: {resp.text[:500]}")
+        print(f"API Error {resp.status_code}")
         resp.raise_for_status()
     result = resp.json()
 
