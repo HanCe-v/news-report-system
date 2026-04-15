@@ -256,7 +256,7 @@ def main():
         timeout=180,
     )
     if resp.status_code != 200:
-        print(f"API Error {resp.status_code}: {resp.text[:500]}")
+        print(f"API Error {resp.status_code}")
         resp.raise_for_status()
     result = resp.json()
 
